@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# This install script is meant for linux
+# To install ubuntu/debian dependencies, uncomment the next line: 
+#sudo apt-get install build-essential cmake git libgtk2.0-dev pkg-config libavcodec-dev libavformat-dev libswscale-dev python-dev python-numpy libtbb2 libtbb-dev libjpeg-dev libpng-dev libtiff-dev libjasper-dev libdc1394-22-dev
+
 echo " This script needs QT installed (0r remove -D WITH_QT=ON from build options)"
 read -n1 -p "This will clone and build the latest OpenCV in the current directory, press any key to continue..."
 
