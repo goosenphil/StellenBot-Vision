@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # This install script is meant for linux
+# Number of jobs: lscpu | awk ' /CPU\(s\):/ {print $2}' | head -n1
 
 echo "================================================================================================================="
 echo "This script will install the latest OpenCV from source with Python and C++ bindings."
