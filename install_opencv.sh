@@ -1,12 +1,12 @@
 #!/bin/bash
+# OpenCV install script for linux with python and C++ bindings
 
-# This install script is meant for linux
-# Number of jobs: lscpu | awk ' /CPU\(s\):/ {print $2}' | head -n1
+JOBS=`lscpu | awk ' /CPU\(s\):/ {print $2}' | head -n1` # Sets the amount of jobs when compiling to the detected amount of cores
 
-echo "================================================================================================================="
+echo "================================================================================================================================"
 echo "This script will install the latest OpenCV from source with Python and C++ bindings."
 echo "This script needs QT installed (0r remove -D WITH_QT=ON from build options)"
-echo "Please note that OpenCV is a very large download, github access is free without inetkey so please close it."
+echo "Please note that OpenCV is a very large download."
 echo "You may also require to download a few packages, please set your repository to ftp.sun.ac.za to download them for free"
 echo "This can easily be selected from the ubuntu software centre"
 read -n1 -p "This will clone and build the latest OpenCV in the current directory, press any key to continue... (Press Ctrl+C to exit)"
@@ -27,7 +27,7 @@ cd build
 
 echo "Done, now compiling. This might take very long..."
 cmake -D CMAKE_BUILD_TYPE=RELEASE -D CMAKE_INSTALL_PREFIX=/usr/local -D WITH_TBB=ON -D BUILD_NEW_PYTHON_SUPPORT=ON -D WITH_V4L=ON -D INSTALL_C_EXAMPLES=ON -D INSTALL_PYTHON_EXAMPLES=ON -D BUILD_EXAMPLES=ON -D WITH_QT=ON -D WITH_OPENGL=ON -D OPENCV_EXTRA_MODULES_PATH=~/projects/OpenCV3/opencv_contrib/modules -D PYTHON_INCLUDE_DIR=/usr/include/python2.7 -D PYTHON_INCLUDE_DIR2=/usr/include/x86_64-linux-gnu/python2.7 -D PYTHON_LIBRARY=/usr/lib/x86_64-linux-gnu/libpython2.7.so ..
-make -j2 #You might want to tweak this variable to a lower/higher amount depending on your CPU.
+make -j $JOBS
 sudo make install
 
 sudo echo '/usr/local/lib' > /etc/ld.so.conf.d/opencv.conf
