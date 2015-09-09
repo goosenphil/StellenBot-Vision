@@ -4,8 +4,9 @@
 
 try:
     import cv2
+    print "[+] OpenCV installed! Version: " + str(cv2.__version__)
 except ImportError:
-    print "You must have OpenCV installed"
+    print "[-]You must have OpenCV installed"
 
 try:
     import numpy as np
@@ -15,7 +16,7 @@ except ImportError:
 
 def check_install():    
     print "Checking if latest build of OpenCV is installed..."
-    if (cv2.__version__ == "3.0.0-dev"):
+    if (cv2.__version__[:1] == "3"):
         print "[+]Good, you're running the latest source build"
     else:
         print "[-]NOPE! You're running release: " + cv2.__version__
