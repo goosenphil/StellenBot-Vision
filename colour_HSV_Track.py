@@ -89,7 +89,7 @@ while(1):
 
 
     # Bitwise-AND mask and original image
-    res = cv2.bitwise_and(frame,frame, mask= mask)
+    res = cv2.bitwise_and(frame,frame, mask= filter)
     cv2.imshow('result',res)
 
     # cv2.imshow('hsv', hsv)
