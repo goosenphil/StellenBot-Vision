@@ -1,6 +1,7 @@
 #!/usr/bin/env python2
 
 # A tool for selecting a specific colour for inRange thresholding in the HSV colour space
+# now also with contour and moment centroid indication
 
 import cv2
 import numpy as np
@@ -15,10 +16,10 @@ def resetSliders(): #Sets sliders to their default positions
     cv2.setTrackbarPos('Bu', 'mask', 255)
     cv2.setTrackbarPos('Gu', 'mask', 255)
     cv2.setTrackbarPos('Ru', 'mask', 255)
-    cv2.setTrackbarPos('Se', 'filter', 0)
-    cv2.setTrackbarPos('Ie', 'filter', 0)
-    cv2.setTrackbarPos('Sd', 'filter', 0)
-    cv2.setTrackbarPos('Id', 'filter', 0)
+    cv2.setTrackbarPos('Se', 'filter', 1)
+    cv2.setTrackbarPos('Ie', 'filter', 1)
+    cv2.setTrackbarPos('Sd', 'filter', 1)
+    cv2.setTrackbarPos('Id', 'filter', 1)
 
 cap = cv2.VideoCapture(0)
 cv2.namedWindow('mask')
@@ -48,11 +49,11 @@ ie = 1
 while(1):
 
     # Take each frame
-    ret, frame = cap.read()
+    _, frame = cap.read()
 
     # cv2.imshow('or', frame)
 
-    # frame = cv2.fastNlMeansDenoisingColoredMulti(frame, 2, 5, None, 4, 7, 35)
+    #Try denoising algorithm
 
     # Convert BGR to HSV
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -84,13 +85,14 @@ while(1):
 
     # it = 2
 
-    filter = cv2.erode(mask, ke, iterations = ie)
+    filter = np.copy(mask)
+
+    filter = cv2.erode(filter, ke, iterations = ie)
     filter = cv2.dilate(filter, kd, iterations = id)
-    # filter2 =
+
+    # if (ie < 1 and id < 1): #Bug, cannot disable morpological operations
+        # filter = np.copy(mask)
     cv2.imshow('filter', filter)
-    # cv2.imshow('filter2', filter2)
-
-
 
     # Bitwise-AND mask and original image
     res = cv2.bitwise_and(frame,frame, mask= filter)
@@ -99,6 +101,38 @@ while(1):
     # cv2.imshow('hsv', hsv)
     # cv2.imshow('frame',frame)
     cv2.imshow('mask',mask)
+
+    #ToDO: Write contours and moment centroids
+
+    f2 = np.copy(frame)
+
+    #Find contours and draw them
+    _, contours, hierarchy = cv2.findContours(filter, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    cv2.drawContours(f2, contours, -1, (0,0,255), 3)
+
+    #Find centroids of contour moments (Refer to http://docs.opencv.org/master/dd/d49/tutorial_py_contour_features.html#gsc.tab=0)
+    maxArea = 0
+
+    for c in contours: #Try dealing with similiar areas, using a a +- percentage change
+
+        area = cv2.contourArea(c)
+
+        if (area > maxArea):
+            maxArea = area
+            mo = cv2.moments(c)
+
+            cx = int(mo['m10']/mo['m00'])
+            cy = int(mo['m01']/mo['m00'])
+
+
+    try:
+        cv2.circle(f2,(cx,cy), 5, (255,0,0), -1)
+
+    except:
+        pass
+
+    cv2.imshow('contours', f2)
+
 
     k = cv2.waitKey(5) & 0xFF
     if k == 27: #Checks if escape is pressed
