@@ -1,4 +1,5 @@
-#!/bin/env python2
+#!/usr/bin/env python2
+
 # A program to select a colour for openCV's BGR format
 # Is also used to display numerical values of keys pressed
 import cv2

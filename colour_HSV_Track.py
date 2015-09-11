@@ -1,4 +1,4 @@
-#!/bin/env python2
+#!/usr/bin/env python2
 
 # A tool for selecting a specific colour for inRange thresholding in the HSV colour space
 
@@ -48,7 +48,7 @@ while(1):
     # define range of BGR color in HSV
     lower_BGR = np.array([bl,gl,rl])
     upper_BGR = np.array([bu,gu,ru])
-    # Threshold the HSV image to get only blue colors
+    # Threshold the HSV image to get only BGR colors
     mask = cv2.inRange(hsv, lower_BGR, upper_BGR)
     #ToDo, add morpological operations, find contours and moments
 
@@ -59,7 +59,7 @@ while(1):
     cv2.imshow('frame',frame)
     cv2.imshow('mask',mask)
     cv2.imshow('result',res)
-    cv2.imshow('morpological', mask2)
+
     k = cv2.waitKey(5) & 0xFF
     if k == 27: #Checks if escape is pressed
         break
