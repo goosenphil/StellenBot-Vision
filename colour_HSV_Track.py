@@ -18,6 +18,7 @@ def resetSliders(): #Sets sliders to their default positions
 
 cap = cv2.VideoCapture(0)
 cv2.namedWindow('mask')
+cv2.namedWindow('filter')
 
 #Lower BGR sliders
 cv2.createTrackbar('Bl','mask',0,255,nothing)
@@ -29,15 +30,29 @@ cv2.createTrackbar('Bu','mask',0,255,nothing)
 cv2.createTrackbar('Gu','mask',0,255,nothing)
 cv2.createTrackbar('Ru','mask',0,255,nothing)
 
+cv2.createTrackbar('Se','filter',1,255,nothing)
+cv2.createTrackbar('Ie','filter',1,255,nothing)
+
+cv2.createTrackbar('Sd','filter',1,255,nothing)
+cv2.createTrackbar('Id','filter',1,255,nothing)
+
 resetSliders()
+
+id = 1
+ie = 1
 
 while(1):
 
     # Take each frame
     ret, frame = cap.read()
 
+    # cv2.imshow('or', frame)
+
+    # frame = cv2.fastNlMeansDenoisingColoredMulti(frame, 2, 5, None, 4, 7, 35)
+
     # Convert BGR to HSV
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
     bl = cv2.getTrackbarPos('Bl','mask')
     gl = cv2.getTrackbarPos('Gl','mask')
     rl = cv2.getTrackbarPos('Rl','mask')
@@ -50,15 +65,36 @@ while(1):
     upper_BGR = np.array([bu,gu,ru])
     # Threshold the HSV image to get only BGR colors
     mask = cv2.inRange(hsv, lower_BGR, upper_BGR)
+
     #ToDo, add morpological operations, find contours and moments
+    se = cv2.getTrackbarPos('Se','filter')
+    ie = cv2.getTrackbarPos('Ie','filter')
+
+    sd = cv2.getTrackbarPos('Sd','filter')
+    di = cv2.getTrackbarPos('Id','filter')
+
+    # print(se)
+
+    ke = np.ones((se,se),np.uint8)
+    kd = np.ones((di,di),np.uint8)
+
+    # it = 2
+
+    filter = cv2.erode(mask, ke, iterations = ie)
+    filter = cv2.dilate(filter, kd, iterations = id)
+    # filter2 =
+    cv2.imshow('filter', filter)
+    # cv2.imshow('filter2', filter2)
+
+
 
     # Bitwise-AND mask and original image
     res = cv2.bitwise_and(frame,frame, mask= mask)
-
-    cv2.imshow('hsv', hsv)
-    cv2.imshow('frame',frame)
-    cv2.imshow('mask',mask)
     cv2.imshow('result',res)
+
+    # cv2.imshow('hsv', hsv)
+    # cv2.imshow('frame',frame)
+    cv2.imshow('mask',mask)
 
     k = cv2.waitKey(5) & 0xFF
     if k == 27: #Checks if escape is pressed
