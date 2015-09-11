@@ -15,6 +15,10 @@ def resetSliders(): #Sets sliders to their default positions
     cv2.setTrackbarPos('Bu', 'mask', 255)
     cv2.setTrackbarPos('Gu', 'mask', 255)
     cv2.setTrackbarPos('Ru', 'mask', 255)
+    cv2.setTrackbarPos('Se', 'filter', 0)
+    cv2.setTrackbarPos('Ie', 'filter', 0)
+    cv2.setTrackbarPos('Sd', 'filter', 0)
+    cv2.setTrackbarPos('Id', 'filter', 0)
 
 cap = cv2.VideoCapture(0)
 cv2.namedWindow('mask')
