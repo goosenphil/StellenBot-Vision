@@ -3,6 +3,8 @@
 # A tool for selecting a specific colour for inRange thresholding in the HSV colour space
 # now also with contour and moment centroid indication
 
+#ToDo: replace wrong naming of colour space sliders (they actually represent HSV)
+
 import cv2
 import numpy as np
 
@@ -51,9 +53,7 @@ while(1):
     # Take each frame
     _, frame = cap.read()
 
-    # cv2.imshow('or', frame)
-
-    #Try denoising algorithm
+    #Try denoising algorithm (ToDo)
 
     # Convert BGR to HSV
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -102,8 +102,6 @@ while(1):
     # cv2.imshow('frame',frame)
     cv2.imshow('mask',mask)
 
-    #ToDO: Write contours and moment centroids
-
     f2 = np.copy(frame)
 
     #Find contours and draw them
@@ -113,6 +111,7 @@ while(1):
     #Find centroids of contour moments (Refer to http://docs.opencv.org/master/dd/d49/tutorial_py_contour_features.html#gsc.tab=0)
     maxArea = 0
 
+    #Finds centre of largest contour area, using image moment centroid and draws it as a circle
     for c in contours: #Try dealing with similiar areas, using a a +- percentage change
 
         area = cv2.contourArea(c)
@@ -132,7 +131,6 @@ while(1):
         pass
 
     cv2.imshow('contours', f2)
-
 
     k = cv2.waitKey(5) & 0xFF
     if k == 27: #Checks if escape is pressed
