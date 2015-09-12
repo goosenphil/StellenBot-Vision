@@ -4,7 +4,7 @@
 JOBS=`lscpu | awk ' /CPU\(s\):/ {print $2}' | head -n1` # Sets the amount of jobs when compiling to the detected amount of cores
 
 echo "================================================================================================================================"
-echo "This script will install the latest OpenCV from source with Python and C++ bindings."
+echo "This script will install the latest OpenCV from source with Python and C++ bindings. (Currently for only x86_64 architechtures)"
 echo "This script needs QT installed (0r remove -D WITH_QT=ON from build options)"
 echo "Please note that OpenCV is a very large download."
 echo "You may also require to download a few packages, please set your repository to ftp.sun.ac.za to download them for free"
@@ -17,6 +17,11 @@ if [ -x "$(command -v apt-get)" ]; then
 else
     echo "Not running a debian based distro, please install the packages"
 fi
+
+echo "Now installing numpy"
+wget https://bootstrap.pypa.io/get-pip.py
+sudo python get-pip.py
+sudo pip install numpy
 
 echo "Now downloading OpenCV from github..."
 git clone https://github.com/Itseez/opencv.git
