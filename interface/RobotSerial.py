@@ -3,9 +3,9 @@
 import RobotModel
 import serial
 
-class SerialSession():
-    def __init__(self, robotModel):
-        self.session = serial.Serial('/dev/robot', 9600)
+class SerialSession:
+    def __init__(self, robotModel, device = '/dev/robot'):
+        self.session = serial.Serial(device, 9600)
         self.currentRobotModel = RobotModel()
         self.updateRobotState(robotModel)
 
