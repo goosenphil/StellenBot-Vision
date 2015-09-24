@@ -8,11 +8,9 @@ def nothing(x):
 
 def centroid(moments):
     try:
-        return (int(moments['m10']/moments['m00']), int(moments['m01']/moments['m00']))
-        # return 0,0
+        return int(moments['m10']/moments['m00']), int(moments['m01']/moments['m00'])
     except:
         return 0,0
-        # pass
 
 def crop(inFrame, x1, y1, x2, y2):
     # tempFrame = np.copy() # Prevents drawing onto frame if cropping from same frame
@@ -21,9 +19,10 @@ def crop(inFrame, x1, y1, x2, y2):
 
 cap = cv2.VideoCapture(1)
 cv2.namedWindow('mask')
+cv2.namedWindow('draw')
 cv2.createTrackbar('thresh','mask',55,255,nothing)
-# cv2.createTrackbar('cutSize','frame',0,255,nothing)
-# cv2.createTrackbar('offset','frame',0,255,nothing)
+cv2.createTrackbar('cutSize','draw',10,255,nothing)
+cv2.createTrackbar('offset','draw',50,255,nothing)
 # cv2.setTrackbarPos('thesh', 'mask', 55)
 
 _, test = cap.read()
@@ -35,8 +34,8 @@ midw = width/2
 midh = height/2
 # print midw, midh
 
-cutSize = 30
-offset = 400
+cutSize = 50
+offset = 500
 wait = 5
 
 while(1):
@@ -50,6 +49,8 @@ while(1):
 
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     threshVal = cv2.getTrackbarPos('thresh','mask')
+    cutSize = cv2.getTrackbarPos('cutSize', 'draw')
+    offset = cv2.getTrackbarPos('offset', 'draw')
     ret,mask = cv2.threshold(gray, threshVal, 255, cv2.THRESH_BINARY_INV)
     cv2.imshow('mask',mask)
 
@@ -74,8 +75,8 @@ while(1):
     #It mighe be easier if I place masks on top of black frame of same resolution as original to not have to keep track of offsets
     #ToDo, try to remove 'jumping', point cannot traverse amount of units per amount of frames
     prev = (0,0)
-    z = crop(frame, midw-100,offset, midw+100,offset+cutSize)
-    cv2.imshow('z',z)
+    # z = crop(frame, midw-100,offset, midw+100,offset+cutSize)
+    # cv2.imshow('z',z)
     for a,corn in zip(cuts,corners):
         _, contours, hierarchy = cv2.findContours(np.copy(a), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         for b in contours:
@@ -83,12 +84,13 @@ while(1):
                 cord = centroid(cv2.moments(contours[0]))
                 # if cord != (0,0)
                 # cv2.circle(frame,(cord[0],cord[1]), 5, (255,0,255), 5)
-                cv2.circle(drawFrame,(cord[0]+corn[0],cord[1]+corn[1]), 5, (0,0,255), 5)
+                if cord != (0,0):
+                    cv2.circle(drawFrame,(cord[0]+corn[0],cord[1]+corn[1]), 5, (0,0,255), 5)
                 # cv2.circle(frame,(cord[0]+corn1[1],cord[1]+corn1[1]), 5, (255,0,255), 5)
                 # print "[",cord[0], cord[1], "]"
 
                 if cord is not prev:
-                    print cord
+                    # print cord
                     prev = cord
                 cv2.drawContours(a, contours, -1, (0,0,0), 1)
                 # print contours
@@ -110,20 +112,12 @@ while(1):
     # cv2.imshow('filter', filter)
 
     cv2.imshow('Source image, make sure I am unmodified!', frame) # Make sure this frame is unmodified at the end, to avoid conflicts in calculations
-    cv2.imshow('Draw frame',drawFrame)
+    cv2.imshow('draw',drawFrame)
 
     # cv2.imshow('crop', crop(100,200,300,400, frame))
 
     k = cv2.waitKey(wait) & 0xFF
     if k == 27: #Checks if escape is pressed
         break
-    if k == 32: # Check for spacebar (To reset sliders)
-        # resetSliders()
-        # wait = 1000
-        if wait is 1000:
-            wait = 5
-        if wait is 5:
-            wait = 1000
-
 
 cv2.destroyAllWindows()
