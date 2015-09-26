@@ -1,40 +1,88 @@
 #!/usr/bin/env python2
 
+# This script can make robot follow a black line.
+# Press spacebar to toggle robot ON/OFF (OFF at start)
+
 import cv2
 import numpy as np
 import serial
 import time
 
+# sys.path.insert(0, '../interface')
+# import RobotModel
+# import RobotSerial
+# ToDo: replace direct serial scheme with Rene's wrapper functions for serial
+
 def nothing(x):
     pass
 
+# Calculates the centorid of a shape given.
 def centroid(moments):
     try:
         return int(moments['m10']/moments['m00']), int(moments['m01']/moments['m00'])
     except:
         return 0,0
 
+# Crops a rectangle out of the input frame and draws where it was cut from on top of drawFrame
 def crop(inFrame, x1, y1, x2, y2):
-    cv2.rectangle(drawFrame,(x1,y1),(x2,y2), ( x1-y2, y1-y2, x2-y2 )  ,5) #The part that says ( x1-y2, y1-y2, x2-y2 ) is to create constant but differing colours for each rectangle based on positions
+    cv2.rectangle(drawFrame,(x1,y1),(x2,y2), ( x1-y2, y1-y2, x2-y2 )  ,5) #The part that says ( x1-y2, y1-y2, x2-y2 ) is to create constant (across frames, no flickering) but differing colours for each rectangle based on positions
     return inFrame[y1:y2, x1:x2]
 
+# The temporary method of sending bytes to the robot
+# To be replaced soon.
 def send(motor, speed):
-    try:
-        s.open()
-    except:
-        pass
+    # try:
+    #     s.open()
+    # except:
+    #     pass
+    #
+    # if speed < 0:
+    #     s.write( chr(motor)  + chr(0) + chr(speed) )
+    # else:
+    #     s.write( chr(motor)  + chr(1) + chr(speed) )
+    # s.close()
 
-    if speed < 0:
-        s.write( chr(motor)  + chr(0) + chr(speed) )
-    else:
-        s.write( chr(motor)  + chr(1) + chr(speed) )
-    s.close()
+    print motor,speed
 
-s = serial.Serial('/dev/ttyACM3')
+
+# Checks if a certain amount of milliseconds has passed since it's last call
+# Use this function to create non-blocking wait states in the while loop
+# Thus you can have delayed actions within the main loop without dropping frames
+tick = 0.0
+def checkMs(diff):
+    newTime = time.time() * 1000
+    global tick
+
+    if (newTime-tick > diff):
+        tick = newTime
+        return True
+
+    return False
+
+# Causes the robot to perform actions
+def doRobot(tolerance, angle, speed):
+    if (-tolerance < angle < tolerance): # Attempt to move forward when on line
+        # send(0,speed)
+        # send(1,speed)
+        send(0,speed)
+        send(1,speed)
+    if ( angle < -tolerance): # Attempt to move right towards line
+        send(0,speed)
+        send(1,0)
+    if( angle > tolerance): # Attempt to move left towards line
+        send(1,speed)
+        send(0,0)
+
+# Stops the robot from moving
+def stopRobot():
+    send(1,0)
+    send(0,0)
+
+# s = serial.Serial('/dev/ttyACM3')
 cap = cv2.VideoCapture(1)
 cv2.namedWindow('mask')
 cv2.namedWindow('draw')
-cv2.createTrackbar('thresh','mask',14,255,nothing)
+cv2.createTrackbar('thresh','mask',42,255,nothing)
 cv2.createTrackbar('cutHeight','draw',40,255,nothing)
 cv2.createTrackbar('offset','draw',400,500,nothing)
 
@@ -51,11 +99,11 @@ offset = 0
 wait = 10
 oldLine = [(0,0), (0,0)]
 robotEnabled = False
-# send(0, 0)cutHeight
-# send(1, 0)
+
 tolerance = 10
 speed = 70
 
+# The main function
 while(1):
 
     _, frame = cap.read()
@@ -71,6 +119,7 @@ while(1):
 
     mask2 = np.copy(mask)
 
+    # morpological operations, uncomment below to apply filtering
     # ke = np.ones((10,10),np.uint8)
     # kd = np.ones((3,3),np.uint8)
     # filter = np.copy(mask)
@@ -83,7 +132,7 @@ while(1):
 
     corners = [(midw-cutWidth,offset), (midw-cutWidth,height-cutHeight-offset)] # The top left corners of the rectangles
 
-    #ToDo, try to remove 'ju70ing', point cannot traverse amount of units per amount of frames
+    #ToDo, try to remove 'jumping', point cannot traverse amount of units per amount of frames
     prev = (0,0)
     line = []
     for a,corn in zip(cuts,corners):
@@ -97,7 +146,6 @@ while(1):
                     line.append(pos)
 
                 if cord is not prev:
-                    # print cord
                     prev = cord
 
     if len(line) == 2:
@@ -106,54 +154,36 @@ while(1):
     if line != oldLine:
         oldLine = line
         try:
-            if len(line) == 2:
+            if len(line) == 2: # If two points are found representing line
                 angle = np.degrees(np.arctan(-float(line[0][0]-line[1][0])/float(line[0][1]-line[1][1])))
                 print "angle: ", str(angle), "line", str(line)
 
                 if robotEnabled:
-                    if (-tolerance < angle < tolerance):
-                        # send(0,speed)
-                        # send(1,speed)
-                        send(0,75)
-                        send(1,75)
-                    if ( angle < -tolerance):
-                        send(0,speed)
-                        send(1,0)
-                    if( angle > tolerance):
-                        send(1,speed)
-                        send(0,0)
-                else:
-                    send(0,65)
-                    send(1,65)
-            time.sleep(0.125)
-            # send(0,0)
-            # send(1,0)
-            # time.sleep(0.1)
+                    if checkMs(100):
+                        doRobot(tolerance, angle, speed)
+
+            else:
+                stopRobot()
         except:
             pass
 
-    # cv2.imshow('top', cuts[0])
-    # cv2.imshow('bot', cuts[1])
-
-    #ToDo: Possibly use morpological operations
-    # ke = np.ones((se,se),np.uint8)
-    # kd = np.ones((di,di),np.uint8)
-    # filter = np.copy(mask)
-    #
-    # filter = cv2.erode(filter, ke, iterations = ie)
-    # filter = cv2.dilate(filter, kd, iterations = id)
-    # cv2.imshow('filter', filter)
-
-    # cv2.imshow('Source image, make sure I am unmodified!', frame) # Make sure this frame is unmodified at the end, to avoid conflicts in calculations
+    # cv2.imshow('crop', crop(frame, 100,200,300,400)) # Demonstrates the cropping function visually
+    cv2.imshow('Source image, make sure I am unmodified!', frame) # Make sure this frame is unmodified at the end, to avoid conflicts in calculations
     cv2.imshow('draw',drawFrame)
 
-    # cv2.imshow('crop', crop(cutWidth,200,300,400, frame))
+
+    # if checkMs(10): # Demonstrates non-blocking wait
+        # print tick/1000
 
     k = cv2.waitKey(wait) & 0xFF
     if k == 27: #Checks if escape is pressed
         break
-    if k == 114:
-        robotEnabled = True
+    if k == 32: # Press space to toggle robot
+        if robotEnabled == False:
+            robotEnabled = True
+        else:
+            robotEnabled = False
+            stopRobot()
 
 cv2.destroyAllWindows()
-s.close()
+# s.close()
