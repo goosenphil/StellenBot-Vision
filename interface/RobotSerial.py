@@ -4,8 +4,8 @@ import RobotModel
 import serial
 
 class SerialSession:
-    def __init__(self, robotModel, device = '/dev/robot'):
-        self.session = serial.Serial(device, 9600)
+    def __init__(self, robotModel, device = '/dev/robot', baudrate = 115200):
+        self.session = serial.Serial(device, baudrate)
         self.currentRobotModel = RobotModel()
         self.updateRobotState(robotModel)
 
@@ -45,5 +45,6 @@ class SerialSession:
         # set currentRobotModel to robotModel
         self.currentRobotModel = robotModel
 
+    # New specification: byte > 100 resets buffer. 3 bytes are used per buffer
     def sendBytes(self, byte1 = chr(0), byte2 = chr(0), byte3 = chr(0))
-        self.session.write(chr(0xff) + chr(0xfe) + byte1 + byte2 + byte3)
+        self.session.write(chr(0xff) + byte1 + byte2 + byte3)
