@@ -13,7 +13,7 @@ class SerialSession:
         self.session.close()
 
     def __pollReedSwitchState(self):
-        self.sendBytes(chr(3))
+        self.sendBytes(chr(0xff) + chr(3))
         r = self.session.read()
         if(r == chr(1)):
             return True
@@ -29,7 +29,7 @@ class SerialSession:
                 self.sendBytes(chr(0), chr(0), chr(robotModel.speedLeft))
 
         # update speed of right motor
-        if (self.currentRobotModel.speedRigth != robotModel.speedRight):
+        if (self.currentRobotModel.speedRight != robotModel.speedRight):
             if (robotModel.speedRight < 0):
                 self.sendBytes(chr(1), chr(1), chr(abs(robotModel.speedRight)))
             else:
