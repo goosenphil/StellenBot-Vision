@@ -12,7 +12,9 @@ import time
 # import RobotModel
 # import RobotSerial
 # ToDo: replace direct serial scheme with Rene's wrapper functions for serial
+# Make it not send the serial command, if the state already exists specified by the command
 
+# An empty function to allow sliders
 def nothing(x):
     pass
 
@@ -40,8 +42,7 @@ def send(motor, speed):
     #     s.write( chr(motor)  + chr(0) + chr(speed) )
     # else:
     #     s.write( chr(motor)  + chr(1) + chr(speed) )
-    # s.close()
-
+    # s.close() # Closing might cause more delay, possibly use global oject instead
     print motor,speed
 
 
@@ -60,18 +61,21 @@ def checkMs(diff):
     return False
 
 # Causes the robot to perform actions
+lastAction = (0,0,0)
 def doRobot(tolerance, angle, speed):
-    if (-tolerance < angle < tolerance): # Attempt to move forward when on line
-        # send(0,speed)
-        # send(1,speed)
-        send(0,speed)
-        send(1,speed)
-    if ( angle < -tolerance): # Attempt to move right towards line
-        send(0,speed)
-        send(1,0)
-    if( angle > tolerance): # Attempt to move left towards line
-        send(1,speed)
-        send(0,0)
+    # print tolerance, angle, speed
+    global lastAction
+    if lastAction != (tolerance, angle, speed):
+        lastAction = (tolerance, angle, speed)
+        if (-tolerance < angle < tolerance): # Attempt to move forward when on line
+            send(0,speed)
+            send(1,speed)
+        if ( angle < -tolerance): # Attempt to move right towards line
+            send(0,speed)
+            send(1,0)
+        if( angle > tolerance): # Attempt to move left towards line
+            send(1,speed)
+            send(0,0)
 
 # Stops the robot from moving
 def stopRobot():
@@ -145,7 +149,7 @@ while(1):
                     cv2.circle(drawFrame,(pos), 5, (0,0,255), 5)
                     line.append(pos)
 
-                if cord is not prev:
+                if cord != prev:
                     prev = cord
 
     if len(line) == 2:
@@ -156,14 +160,14 @@ while(1):
         try:
             if len(line) == 2: # If two points are found representing line
                 angle = np.degrees(np.arctan(-float(line[0][0]-line[1][0])/float(line[0][1]-line[1][1])))
-                print "angle: ", str(angle), "line", str(line)
+                # print "angle: ", str(angle), "line", str(line)
 
                 if robotEnabled:
                     if checkMs(100):
                         doRobot(tolerance, angle, speed)
 
-            else:
-                stopRobot()
+            # else:
+                # stopRobot()
         except:
             pass
 
