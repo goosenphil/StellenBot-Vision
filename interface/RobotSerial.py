@@ -6,7 +6,7 @@ import serial
 class SerialSession:
     def __init__(self, robotModel, device = '/dev/robot', baudrate = 115200):
         self.session = serial.Serial(device, baudrate)
-        self.currentRobotModel = RobotModel()
+        self.currentRobotModel = RobotModel.RobotModel()
         self.updateRobotState(robotModel)
 
     def close(self):
@@ -23,6 +23,7 @@ class SerialSession:
     def updateRobotState(self, robotModel):
         # update speed of left motor
         if (self.currentRobotModel.speedLeft != robotModel.speedLeft):
+            self.currentRobotModel.speedLeft = robotModel.speedLeft
             if (robotModel.speedLeft < 0):
                 self.sendBytes(chr(0), chr(1), chr(abs(robotModel.speedLeft)))
             else:
@@ -30,6 +31,7 @@ class SerialSession:
 
         # update speed of right motor
         if (self.currentRobotModel.speedRight != robotModel.speedRight):
+            self.currentRobotModel.speedRight = robotModel.speedRight
             if (robotModel.speedRight < 0):
                 self.sendBytes(chr(1), chr(1), chr(abs(robotModel.speedRight)))
             else:
@@ -37,14 +39,12 @@ class SerialSession:
 
         # close/open the claw
         if (self.currentRobotModel.clawClosed != robotModel.clawClosed):
+            self.currentRobotModel.clawClosed = robotModel.clawClosed
             self.sendBytes(chr(2), chr(robotModel.clawClosed))
 
         # update the state of the reed switch
         robotModel.reedSwitch = self.__pollReedSwitchState()
 
-        # set currentRobotModel to robotModel
-        self.currentRobotModel = robotModel
-
     # New specification: byte > 100 resets buffer. 3 bytes are used per buffer
-    def sendBytes(self, byte1 = chr(0), byte2 = chr(0), byte3 = chr(0))
+    def sendBytes(self, byte1 = chr(0), byte2 = chr(0), byte3 = chr(0)):
         self.session.write(chr(0xff) + byte1 + byte2 + byte3)
