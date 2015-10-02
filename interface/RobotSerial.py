@@ -13,7 +13,7 @@ class SerialSession:
         self.session.close()
 
     def __pollReedSwitchState(self):
-        self.sendBytes(chr(0xff) + chr(3))
+        self.sendBytes(chr(3))
         r = self.session.read()
         if(r == chr(1)):
             return True
@@ -47,4 +47,4 @@ class SerialSession:
 
     # New specification: byte > 100 resets buffer. 3 bytes are used per buffer
     def sendBytes(self, byte1 = chr(0), byte2 = chr(0), byte3 = chr(0)):
-        self.session.write(chr(0xff) + byte1 + byte2 + byte3)
+        self.session.write(chr(0x65) + byte1 + byte2 + byte3)
