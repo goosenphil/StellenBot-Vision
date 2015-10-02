@@ -73,7 +73,7 @@ class RobotVisualiser:
     def __update(self):
         self.parent_conn.send(self.visualiserModel) # send the current model
 
-    def setRobotModel(robotModel):
+    def setRobotModel(self, robotModel):
         # set attributes of the visualiserModel to the attributes of the RobotModel received
         self.visualiserModel.speedLeft = robotModel.speedLeft
         self.visualiserModel.speedRight = robotModel.speedRight
