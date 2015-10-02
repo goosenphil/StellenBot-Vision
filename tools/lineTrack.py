@@ -7,10 +7,11 @@ import cv2
 import numpy as np
 import serial
 import time
+# import sys
 
 # sys.path.insert(0, '../interface')
-# import RobotModel
-# import RobotSerial
+import RobotModel
+import RobotSerial
 # ToDo: replace direct serial scheme with Rene's wrapper functions for serial
 # Make it not send the serial command, if the state already exists specified by the command
 
@@ -33,15 +34,16 @@ def crop(inFrame, x1, y1, x2, y2):
 # The temporary method of sending bytes to the robot
 # To be replaced soon.
 def send(motor, speed):
-    # try:
-    #     s.open()
-    # except:
-    #     pass
-    #
-    # if speed < 0:
-    #     s.write( chr(motor)  + chr(0) + chr(speed) )
-    # else:
-    #     s.write( chr(motor)  + chr(1) + chr(speed) )
+    # global s
+    try:
+        s.open()
+    except:
+        pass
+    s.write(chr(101));
+    if speed < 0:
+        s.write( chr(motor)  + chr(0) + chr(speed) )
+    else:
+        s.write( chr(motor)  + chr(1) + chr(speed) )
     # s.close() # Closing might cause more delay, possibly use global oject instead
     print motor,speed
 
@@ -62,27 +64,41 @@ def checkMs(diff):
 
 # Causes the robot to perform actions
 lastAction = (0,0,0)
+rm = RobotModel.RobotModel()
+ss = RobotSerial.SerialSession(rm, '/dev/ttyACM3', 115200)
 def doRobot(tolerance, angle, speed):
     # print tolerance, angle, speed
     global lastAction
+    global rm
+    global ss
     if lastAction != (tolerance, angle, speed):
         lastAction = (tolerance, angle, speed)
         if (-tolerance < angle < tolerance): # Attempt to move forward when on line
-            send(0,speed)
-            send(1,speed)
+            # send(0,speed)
+            # send(1,speed)
+            rm.speedLeft = speed
+            rm.speedRight = speed
         if ( angle < -tolerance): # Attempt to move right towards line
-            send(0,speed)
-            send(1,0)
+            # send(0,speed)
+            # send(1,0)
+            rm.speedRight = speed
+            rm.speedLeft = 0
         if( angle > tolerance): # Attempt to move left towards line
-            send(1,speed)
-            send(0,0)
+            # send(0,0)
+            # send(1,speed)
+            rm.setSpeedLeft = speed
+            rm.setSpeedRight = 0
+
+        ss.updateRobotState(rm)
 
 # Stops the robot from moving
 def stopRobot():
     send(1,0)
     send(0,0)
+    # doRobot(5, 1, 0)
 
-# s = serial.Serial('/dev/ttyACM3')
+
+s.open()
 cap = cv2.VideoCapture(1)
 cv2.namedWindow('mask')
 cv2.namedWindow('draw')
@@ -106,6 +122,8 @@ robotEnabled = False
 
 tolerance = 10
 speed = 70
+
+# s = serial.Serial('/dev/ttyACM3')
 
 # The main function
 while(1):
@@ -172,7 +190,7 @@ while(1):
             pass
 
     # cv2.imshow('crop', crop(frame, 100,200,300,400)) # Demonstrates the cropping function visually
-    cv2.imshow('Source image, make sure I am unmodified!', frame) # Make sure this frame is unmodified at the end, to avoid conflicts in calculations
+    # cv2.imshow('Source image, make sure I am unmodified!', frame) # Make sure this frame is unmodified at the end, to avoid conflicts in calculations
     cv2.imshow('draw',drawFrame)
 
 
