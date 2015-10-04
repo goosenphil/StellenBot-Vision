@@ -121,23 +121,20 @@ while(1):
         mo = cv2.moments(c)
         conA = cv2.contourArea(c)
 
-        peri = cv2.arcLength(c, True)
-    	approx = cv2.approxPolyDP(c, 0.02 * peri, True)
+    	if conA > 200:
+            peri = cv2.arcLength(c, True)
+            approx = cv2.approxPolyDP(c, 0.02 * peri, True)
 
-    	# if our approximated contour has four points, then
-    	# we can assume that we have found our screen
-    	if conA > 200 and 4 <= len(approx) < 10:
-            screenCnt = approx
-            # print screenCnt
+            if 4 <= len(approx) < 10: # Look for object within specific range of sides
 
-            try:
-                cx = int(mo['m10']/mo['m00'])
-                cy = int(mo['m01']/mo['m00'])
-                cv2.circle(f2,(cx,cy), 5, (255,0,0), -1)
-                cv2.putText(f2,(str((cx,cy,conA))),(cx,cy), font, 1,(255,100,50),2,cv2.LINE_AA)
-                cv2.putText(f2,("Dist" + str((midw-cx,midh-cy,conA,len(approx)))),(cx,cy+50), font, 1,(155,200,100),2,cv2.LINE_AA)
-            except:
-                pass
+                try:
+                    cx = int(mo['m10']/mo['m00'])
+                    cy = int(mo['m01']/mo['m00'])
+                    cv2.circle(f2,(cx,cy), 5, (255,0,0), -1)
+                    cv2.putText(f2,(str((cx,cy,conA))),(cx,cy), font, 1,(255,100,50),2,cv2.LINE_AA) # Puts co-ordinates of object
+                    cv2.putText(f2,(str((midw-cx,height-cy,conA,len(approx)))),(cx,cy+50), font, 1,(155,200,100),2,cv2.LINE_AA) #Distance from bottom centre, contour area and sides
+                except:
+                    pass
 
 
     cv2.imshow('contours', f2)
