@@ -1,7 +1,6 @@
 #!/usr/bin/env python2
 
-# This program is for the robot to rush directly to the blocks, using the largest one found as reference
-# After the block is obtained, it should rotate until it sees the starting marker and return the block
+# A program that filters out objects base on colour
 import cv2
 import numpy as np
 
@@ -21,7 +20,7 @@ def resetSliders(): #Sets sliders to their default positions
     cv2.setTrackbarPos('Id', 'filter', 1)
 
 cap = cv2.VideoCapture(0)
-cap.set(640, 480)
+# cap.set(640, 480)
 cv2.namedWindow('mask')
 cv2.namedWindow('filter')
 
@@ -133,7 +132,6 @@ while(1):
                     cv2.circle(f2,(cx,cy), 5, (255,0,0), -1)
                     cv2.putText(f2,(str((cx,cy,conA))),(cx,cy), font, 1,(255,100,50),2,cv2.LINE_AA) # Puts co-ordinates of object
                     cv2.putText(f2,(str((midw-cx,height-cy,conA,len(approx)))),(cx,cy+50), font, 1,(155,200,100),2,cv2.LINE_AA) #Distance from bottom centre, contour area and sides
-                    cv2.line(f2, (cx,cy),(midw,height), (200,150,0), 5)
                 except:
                     pass
 
