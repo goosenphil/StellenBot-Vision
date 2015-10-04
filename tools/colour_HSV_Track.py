@@ -1,10 +1,7 @@
 #!/usr/bin/env python2
 
-# A tool for selecting a specific colour for inRange thresholding in the HSV colour space
-# now also with contour and moment centroid indication
-
-#ToDo: replace wrong naming of colour space sliders (they actually represent HSV)
-
+# This program is for the robot to rush directly to the blocks, using the largest one found as reference
+# After the block is obtained, it should rotate until it sees the starting marker and return the block
 import cv2
 import numpy as np
 
@@ -23,7 +20,7 @@ def resetSliders(): #Sets sliders to their default positions
     cv2.setTrackbarPos('Sd', 'filter', 1)
     cv2.setTrackbarPos('Id', 'filter', 1)
 
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(1)
 cv2.namedWindow('mask')
 cv2.namedWindow('filter')
 
@@ -45,13 +42,15 @@ cv2.createTrackbar('Id','filter',1,255,nothing)
 
 resetSliders()
 
-id = 1
+di = 1
 ie = 1
+font = cv2.FONT_HERSHEY_SIMPLEX
 
 while(1):
 
     # Take each frame
     _, frame = cap.read()
+
 
     #Try denoising algorithm (ToDo)
 
@@ -88,7 +87,7 @@ while(1):
     filter = np.copy(mask)
 
     filter = cv2.erode(filter, ke, iterations = ie)
-    filter = cv2.dilate(filter, kd, iterations = id)
+    filter = cv2.dilate(filter, kd, iterations = di)
 
     # if (ie < 1 and id < 1): #Bug, cannot disable morpological operations
         # filter = np.copy(mask)
@@ -98,18 +97,21 @@ while(1):
     res = cv2.bitwise_and(frame,frame, mask= filter)
     cv2.imshow('result',res)
 
-    # cv2.imshow('hsv', hsv)
-    # cv2.imshow('frame',frame)
+    cv2.imshow('hsv', hsv)
+    cv2.imshow('frame',frame)
     cv2.imshow('mask',mask)
 
+    # denoise = cv2.fastNlMeansDenoisingColored(frame,None,10,10,7,10)
+    # cv2.imshow('denoise', denoise)
     f2 = np.copy(frame)
 
     #Find contours and draw them
     _, contours, hierarchy = cv2.findContours(filter, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    f2 = np.copy(frame)
     cv2.drawContours(f2, contours, -1, (0,0,255), 3)
 
     #Find centroids of contour moments (Refer to http://docs.opencv.org/master/dd/d49/tutorial_py_contour_features.html#gsc.tab=0)
-    maxArea = 0
+    maxArea = 10000
 
     #Finds centre of largest contour area, using image moment centroid and draws it as a circle
     for c in contours: #Try dealing with similiar areas, using a a +- percentage change
@@ -126,6 +128,8 @@ while(1):
 
     try:
         cv2.circle(f2,(cx,cy), 5, (255,0,0), -1)
+        if cy != None:
+            cv2.putText(f2,(str((cx,cy,maxArea))),(cx,cy), font, 1,(255,100,50),2,cv2.LINE_AA)
 
     except:
         pass
