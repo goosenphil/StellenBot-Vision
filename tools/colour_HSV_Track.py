@@ -105,31 +105,18 @@ while(1):
 
     #Find contours and draw them
     _, contours, hierarchy = cv2.findContours(filter, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    contours = sorted(contours, key = cv2.contourArea, reverse = True)[:5] # Reduces contours to only top 5 based on area.
     cv2.drawContours(f2, contours, -1, (0,0,255), 3)
 
     #Find centroids of contour moments (Refer to http://docs.opencv.org/master/dd/d49/tutorial_py_contour_features.html#gsc.tab=0)
-    maxArea = 10000
-
-    #Finds centre of largest contour area, using image moment centroid and draws it as a circle
     for c in contours: #Try dealing with similiar areas, using a a +- percentage change
+        mo = cv2.moments(c)
+        cx = int(mo['m10']/mo['m00'])
+        cy = int(mo['m01']/mo['m00'])
 
-        area = cv2.contourArea(c)
-
-        if (area > maxArea):
-            maxArea = area
-            mo = cv2.moments(c)
-
-            cx = int(mo['m10']/mo['m00'])
-            cy = int(mo['m01']/mo['m00'])
-
-
-    try:
-        cv2.circle(f2,(cx,cy), 5, (255,0,0), -1)
         if cy != None:
-            cv2.putText(f2,(str((cx,cy,maxArea))),(cx,cy), font, 1,(255,100,50),2,cv2.LINE_AA)
-
-    except:
-        pass
+            cv2.circle(f2,(cx,cy), 5, (255,0,0), -1)
+            cv2.putText(f2,(str((cx,cy))),(cx,cy), font, 1,(255,100,50),2,cv2.LINE_AA)
 
     cv2.imshow('contours', f2)
 
