@@ -133,6 +133,7 @@ while(1):
                     cv2.circle(f2,(cx,cy), 5, (255,0,0), -1)
                     cv2.putText(f2,(str((cx,cy,conA))),(cx,cy), font, 1,(255,100,50),2,cv2.LINE_AA) # Puts co-ordinates of object
                     cv2.putText(f2,(str((midw-cx,height-cy,conA,len(approx)))),(cx,cy+50), font, 1,(155,200,100),2,cv2.LINE_AA) #Distance from bottom centre, contour area and sides
+                    cv2.line(f2, (cx,cy),(midw,height), (200,150,0), 5)
                 except:
                     pass
 
