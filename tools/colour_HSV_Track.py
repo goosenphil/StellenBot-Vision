@@ -20,7 +20,8 @@ def resetSliders(): #Sets sliders to their default positions
     cv2.setTrackbarPos('Sd', 'filter', 1)
     cv2.setTrackbarPos('Id', 'filter', 1)
 
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(0)
+cap.set(640, 480)
 cv2.namedWindow('mask')
 cv2.namedWindow('filter')
 
@@ -41,6 +42,13 @@ cv2.createTrackbar('Sd','filter',1,255,nothing)
 cv2.createTrackbar('Id','filter',1,255,nothing)
 
 resetSliders()
+
+_, test = cap.read()
+height = test.shape[0]
+width = test.shape[1]
+midw = width/2
+midh = height/2
+print midw,midh
 
 di = 1
 ie = 1
@@ -111,12 +119,26 @@ while(1):
     #Find centroids of contour moments (Refer to http://docs.opencv.org/master/dd/d49/tutorial_py_contour_features.html#gsc.tab=0)
     for c in contours: #Try dealing with similiar areas, using a a +- percentage change
         mo = cv2.moments(c)
-        cx = int(mo['m10']/mo['m00'])
-        cy = int(mo['m01']/mo['m00'])
+        conA = cv2.contourArea(c)
 
-        if cy != None:
-            cv2.circle(f2,(cx,cy), 5, (255,0,0), -1)
-            cv2.putText(f2,(str((cx,cy))),(cx,cy), font, 1,(255,100,50),2,cv2.LINE_AA)
+        peri = cv2.arcLength(c, True)
+    	approx = cv2.approxPolyDP(c, 0.02 * peri, True)
+
+    	# if our approximated contour has four points, then
+    	# we can assume that we have found our screen
+    	if conA > 200 and 4 <= len(approx) < 10:
+            screenCnt = approx
+            # print screenCnt
+
+            try:
+                cx = int(mo['m10']/mo['m00'])
+                cy = int(mo['m01']/mo['m00'])
+                cv2.circle(f2,(cx,cy), 5, (255,0,0), -1)
+                cv2.putText(f2,(str((cx,cy,conA))),(cx,cy), font, 1,(255,100,50),2,cv2.LINE_AA)
+                cv2.putText(f2,("Dist" + str((midw-cx,midh-cy,conA,len(approx)))),(cx,cy+50), font, 1,(155,200,100),2,cv2.LINE_AA)
+            except:
+                pass
+
 
     cv2.imshow('contours', f2)
 
