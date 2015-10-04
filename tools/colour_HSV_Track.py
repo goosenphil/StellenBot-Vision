@@ -101,13 +101,10 @@ while(1):
     cv2.imshow('frame',frame)
     cv2.imshow('mask',mask)
 
-    # denoise = cv2.fastNlMeansDenoisingColored(frame,None,10,10,7,10)
-    # cv2.imshow('denoise', denoise)
     f2 = np.copy(frame)
 
     #Find contours and draw them
     _, contours, hierarchy = cv2.findContours(filter, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    f2 = np.copy(frame)
     cv2.drawContours(f2, contours, -1, (0,0,255), 3)
 
     #Find centroids of contour moments (Refer to http://docs.opencv.org/master/dd/d49/tutorial_py_contour_features.html#gsc.tab=0)
