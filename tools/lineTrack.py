@@ -7,13 +7,12 @@ import cv2
 import numpy as np
 import serial
 import time
-# import sys
+import sys
 
-# sys.path.insert(0, '../interface')
+sys.path.insert(0, '../interface')
 import RobotModel
 import RobotSerial
-# ToDo: replace direct serial scheme with Rene's wrapper functions for serial
-# Make it not send the serial command, if the state already exists specified by the command
+print "Imported serial!"
 
 # An empty function to allow sliders
 def nothing(x):
@@ -30,23 +29,6 @@ def centroid(moments):
 def crop(inFrame, x1, y1, x2, y2):
     cv2.rectangle(drawFrame,(x1,y1),(x2,y2), ( x1-y2, y1-y2, x2-y2 )  ,5) #The part that says ( x1-y2, y1-y2, x2-y2 ) is to create constant (across frames, no flickering) but differing colours for each rectangle based on positions
     return inFrame[y1:y2, x1:x2]
-
-# The temporary method of sending bytes to the robot
-# To be replaced soon.
-def send(motor, speed):
-    # global s
-    try:
-        s.open()
-    except:
-        pass
-    s.write(chr(101));
-    if speed < 0:
-        s.write( chr(motor)  + chr(0) + chr(speed) )
-    else:
-        s.write( chr(motor)  + chr(1) + chr(speed) )
-    # s.close() # Closing might cause more delay, possibly use global oject instead
-    print motor,speed
-
 
 # Checks if a certain amount of milliseconds has passed since it's last call
 # Use this function to create non-blocking wait states in the while loop
@@ -66,39 +48,36 @@ def checkMs(diff):
 lastAction = (0,0,0)
 rm = RobotModel.RobotModel()
 ss = RobotSerial.SerialSession(rm, '/dev/ttyACM3', 115200)
+# ToDo: Make speed proportionate to angle
 def doRobot(tolerance, angle, speed):
-    # print tolerance, angle, speed
     global lastAction
     global rm
     global ss
     if lastAction != (tolerance, angle, speed):
         lastAction = (tolerance, angle, speed)
         if (-tolerance < angle < tolerance): # Attempt to move forward when on line
-            # send(0,speed)
-            # send(1,speed)
             rm.speedLeft = speed
             rm.speedRight = speed
+            print "______________"
         if ( angle < -tolerance): # Attempt to move right towards line
-            # send(0,speed)
-            # send(1,0)
+            print "<<<<<<<<<<<<<<"
+            rm.speedLeft = speed-10
             rm.speedRight = speed
-            rm.speedLeft = 0
         if( angle > tolerance): # Attempt to move left towards line
-            # send(0,0)
-            # send(1,speed)
-            rm.setSpeedLeft = speed
-            rm.setSpeedRight = 0
+            print ">>>>>>>>>>>>>>"
+            # rm.speedLeft = speed
+            rm.speedLeft = speed
+            rm.speedRight = speed-10
 
         ss.updateRobotState(rm)
 
 # Stops the robot from moving
 def stopRobot():
-    send(1,0)
-    send(0,0)
-    # doRobot(5, 1, 0)
+    rm.SpeedLeft = 0
+    rm.SpeedRight = 0
+    # pass
 
 
-s.open()
 cap = cv2.VideoCapture(1)
 cv2.namedWindow('mask')
 cv2.namedWindow('draw')
@@ -107,7 +86,7 @@ cv2.createTrackbar('cutHeight','draw',40,255,nothing)
 cv2.createTrackbar('offset','draw',400,500,nothing)
 
 _, test = cap.read()
-
+test = cv2.transpose(test)
 height = test.shape[0]
 width = test.shape[1]
 midw = width/2
@@ -120,15 +99,14 @@ wait = 10
 oldLine = [(0,0), (0,0)]
 robotEnabled = False
 
-tolerance = 10
+tolerance = 30
 speed = 70
-
-# s = serial.Serial('/dev/ttyACM3')
 
 # The main function
 while(1):
 
     _, frame = cap.read()
+    frame = cv2.transpose(frame)
     drawFrame = np.copy(frame)
     # cv2.imshow('crop', crop(frame, midw-cutWidth,0, midw+cutWidth,height) )
 
@@ -182,6 +160,7 @@ while(1):
 
                 if robotEnabled:
                     if checkMs(100):
+                        print angle
                         doRobot(tolerance, angle, speed)
 
             # else:
@@ -208,4 +187,3 @@ while(1):
             stopRobot()
 
 cv2.destroyAllWindows()
-# s.close()
