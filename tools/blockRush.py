@@ -6,6 +6,21 @@ import cv2
 import numpy as np
 import time
 
+import serial
+s = serial.Serial('/dev/ttyACM3', 115200)
+# s = time
+
+# try:
+#     # import sys
+#     # sys.path.insert(0, '../interface')
+#     import RobotModel
+#     import RobotSerial
+#     print "[+] Imported robot interface!"
+# except ImportError:
+#     print "[-]Cannot import robot interface"
+
+cap = cv2.VideoCapture(1)
+
 def test(a):
     print "hi"
 
@@ -23,32 +38,33 @@ def checkMs(diff):
 
     return False
 
-# # Causes the robot to perform actions
+# Causes the robot to perform actions
 # lastAction = (0,0,0)
 # rm = RobotModel.RobotModel()
 # ss = RobotSerial.SerialSession(rm, '/dev/ttyACM3', 115200)
-# # ToDo: Make speed proportionate to angle
+# ToDo: Make speed proportionate to angle
 # def doRobot(tolerance, angle, speed):
 #     global lastAction
 #     global rm
 #     global ss
-#     if lastAction != (tolerance, angle, speed):
+#     if True:
 #         lastAction = (tolerance, angle, speed)
+#         speed = -1*(speed + abs(angle))
 #         if (-tolerance < angle < tolerance): # Attempt to move forward when on line
 #             rm.speedLeft = speed
 #             rm.speedRight = speed
 #             print "______________"
 #         if ( angle < -tolerance): # Attempt to move right towards line
 #             print "<<<<<<<<<<<<<<"
-#             rm.speedLeft = speed-10
+#             rm.speedLeft = speed+10
 #             rm.speedRight = speed
 #         if( angle > tolerance): # Attempt to move left towards line
 #             print ">>>>>>>>>>>>>>"
 #             # rm.speedLeft = speed
 #             rm.speedLeft = speed
-#             rm.speedRight = speed-10
+#             rm.speedRight = speed+10
 #
-#         ss.updateRobotState(rm)
+#     ss.updateRobotState(rm)
 
 def resetSliders(): #Sets sliders to their default positions
     cv2.setTrackbarPos('Bl', 'mask', 0)
@@ -68,20 +84,22 @@ def drawFeatures(cx, cy, sides):
     cv2.putText(f2,(str((midw-cx,height-cy,conA,sides))),(cx,cy+50), font, 1,(155,200,100),2,cv2.LINE_AA) #Distance from bottom centre, contour area and sides
     cv2.line(f2, (cx,cy),(midw,height), (200,150,0), 5)
 
-cap = cv2.VideoCapture(0)
 # cap.set(640, 480)
-cv2.namedWindow('mask')
-cv2.namedWindow('filter')
+cv2.namedWindow('mask', cv2.WINDOW_NORMAL)
+cv2.namedWindow('filter', cv2.WINDOW_NORMAL)
+cv2.namedWindow('contours', cv2.WINDOW_NORMAL)
+cv2.resizeWindow('mask', 800, 600);
+cv2.resizeWindow('contours', 800, 600);
 
 #Lower BGR sliders
-cv2.createTrackbar('Bl','mask',0,255,nothing)
-cv2.createTrackbar('Gl','mask',0,255,nothing)
-cv2.createTrackbar('Rl','mask',0,255,nothing)
+cv2.createTrackbar('Bl','mask',76,255,nothing)
+cv2.createTrackbar('Gl','mask',102,255,nothing)
+cv2.createTrackbar('Rl','mask',90,255,nothing)
 
 #Upper BGR sliders
-cv2.createTrackbar('Bu','mask',0,255,nothing)
-cv2.createTrackbar('Gu','mask',0,255,nothing)
-cv2.createTrackbar('Ru','mask',0,255,nothing)
+cv2.createTrackbar('Bu','mask',95,255,nothing)
+cv2.createTrackbar('Gu','mask',255,255,nothing)
+cv2.createTrackbar('Ru','mask',255,255,nothing)
 
 cv2.createTrackbar('Se','filter',1,255,nothing)
 cv2.createTrackbar('Ie','filter',1,255,nothing)
@@ -89,9 +107,10 @@ cv2.createTrackbar('Ie','filter',1,255,nothing)
 cv2.createTrackbar('Sd','filter',1,255,nothing)
 cv2.createTrackbar('Id','filter',1,255,nothing)
 
-resetSliders()
+# resetSliders()
 
 _, test = cap.read()
+# test = cv2.transpose(test)
 height = test.shape[0]
 width = test.shape[1]
 midw = width/2
@@ -101,11 +120,23 @@ print midw,midh
 di = 1
 ie = 1
 font = cv2.FONT_HERSHEY_SIMPLEX
+robotEnabled = False
+# cv2.resizeWindow('mask', 320, 320);
+
+
+# doRobot(1,1,1)
+# rm.speedLeft = 70
+# rm.speedRight = 70
+# ss.updateRobotState(rm)
 
 while(1):
 
     # Take each frame
     _, frame = cap.read()
+    # frame = cv2.transpose(frame)
+    # frame = cv2.flip(frame)
+    # s.write( chr(1)  + chr(1) + chr(speed) + chr(0)  + chr(1) + chr(speed) )
+    # s.write( chr(101) + chr(1)  + chr(1) + chr(speed) )
 
 
     #Try denoising algorithm (ToDo)
@@ -150,22 +181,26 @@ while(1):
     cv2.imshow('filter', filter)
 
     # Bitwise-AND mask and original image
-    res = cv2.bitwise_and(frame,frame, mask= filter)
-    cv2.imshow('result',res)
+    # res = cv2.bitwise_and(frame,frame, mask= filter)
+    # cv2.imshow('result',res)
 
-    cv2.imshow('hsv', hsv)
-    cv2.imshow('frame',frame)
+    # cv2.imshow('hsv', hsv)
+    # cv2.imshow('frame',frame)
     cv2.imshow('mask',mask)
 
     f2 = np.copy(frame)
 
     #Find contours and draw them
     _, contours, hierarchy = cv2.findContours(filter, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
     contours = sorted(contours, key = cv2.contourArea, reverse = True)[:5] # Reduces contours to only top 5 based on area.
-    cv2.drawContours(f2, contours, -1, (0,0,255), 3)
+    # cv2.drawContours(f2, contours, -1, (0,0,255), 3)
+    moo = True
+
 
     #Find centroids of contour moments (Refer to http://docs.opencv.org/master/dd/d49/tutorial_py_contour_features.html#gsc.tab=0)
     for c in contours: #Try dealing with similiar areas, using a a +- percentage change
+        # moo = False
         mo = cv2.moments(c)
         conA = cv2.contourArea(c)
 
@@ -174,23 +209,88 @@ while(1):
             approx = cv2.approxPolyDP(c, 0.02 * peri, True)
 
             if 4 <= len(approx) < 10: # Look for object within specific range of sides
+                moo = False
 
                 try:
                     cx = int(mo['m10']/mo['m00'])
                     cy = int(mo['m01']/mo['m00'])
-                    drawFeatures(cx, cy, len(approx))
-                    if checkMs(300):
-                        print "moo"
+                    # drawFeatures(cx, cy, len(approx))
+                    # angle = np.degrees(np.arctan(float(cx-midw)/float(cy)))
+                    # cv2.putText(f2,str(angle),(100,100), font, 1,(160,100,50),2,cv2.LINE_AA)
+                    if checkMs(10) and cy > midh-midh:
+                        if robotEnabled:
+                            drawFeatures(cx, cy, len(approx))
+                            cv2.drawContours(f2, [approx], -1, (0, 200, 50), 3)
+                            angle = np.degrees(np.arctan(float(cx-midw)/float(cy)))
+                            # print "angle: ", str(angle)
+                            cv2.putText(f2,str(angle),(100,100), font, 1,(160,100,50),2,cv2.LINE_AA)
+                            # doRobot(10, angle, 50)
+                            # s.write( chr(101) + chr(1)  + chr(1) + chr(0) )
+                            # s.write( chr(101) + chr(0)  + chr(1) + chr(0) )
+                            tol = 3
+                            speed = (50+ abs(int(angle)))
+                            speed = int(speed)
+                            if speed > 90:
+                                speed = 70
+                            if speed < 70:
+                                speed = 70
+                            print "[",str(speed),"]"
+
+                            if (tol > abs(angle) ): # Attempt to move forward when on line
+                                cv2.putText(f2,"|"+str(speed)+"|",(100,150), font, 1,(255,255,100),2,cv2.LINE_AA)
+                                s.write( chr(101) + chr(0)  + chr(1) + chr(80) )
+                                s.write( chr(101) + chr(1)  + chr(1) + chr(80) )
+                                print "______________"
+                            elif ( angle < -tol): # Attempt to move right towards line
+                                print "<<<<<<<<<<<<<<"
+                                cv2.putText(f2,"<"+str(speed),(100,150), font, 1,(255,255,100),2,cv2.LINE_AA)
+                                s.write( chr(101) + chr(1)  + chr(1) + chr(speed) )
+                                s.write( chr(101) + chr(0)  + chr(1) + chr(speed-10) )
+                            elif( angle > tol): # Attempt to move left towards line
+                                # rm.speedLeft = speed
+                                cv2.putText(f2,(str(speed)+">"),(100,150), font, 1,(255,255,100),2,cv2.LINE_AA)
+                                print ">>>>>>>>>>>>>>"
+                                s.write( chr(101) + chr(0)  + chr(1) + chr(speed) )
+                                s.write( chr(101) + chr(1)  + chr(1) + chr(speed-10) )
+
+
+                            # cv2.putText(f2,str(angle),(100,100), font, 1,(160,100,50),2,cv2.LINE_AA)
+                            # ss.updateRobotState(rm)
+                            # rm.speedLeft = 70
+                            # rm.speedRight = 70
+                            # ss.updateRobotState(rm)
+                            # ss.updateRobotState(rm)
+
+
                 except:
                     pass
 
 
+            else:
+                s.write( chr(101) + chr(1)  + chr(1) + chr(0) )
+                s.write( chr(101) + chr(0)  + chr(1) + chr(0) )
+
+    if moo is True:
+        s.write( chr(101) + chr(1)  + chr(1) + chr(0) )
+        s.write( chr(101) + chr(0)  + chr(1) + chr(0) )
+
+
     cv2.imshow('contours', f2)
 
-    k = cv2.waitKey(5) & 0xFF
+    k = cv2.waitKey(10) & 0xFF
     if k == 27: #Checks if escape is pressed
         break
-    if k == 32: # Check for spacebar (To reset sliders)
+    if k == 'r': # Check for spacebar (To reset sliders)
         resetSliders()
+    if k == 32: # Press space to toggle robot
+        if robotEnabled == False:
+            robotEnabled = True
+        else:
+            s.write( chr(101) + chr(1)  + chr(1) + chr(0) )
+            s.write( chr(101) + chr(0)  + chr(1) + chr(0) )
+            robotEnabled = False
+            # stopRobot()
+    # cv2.resizeWindow('mask', 800, 600);
 
 cv2.destroyAllWindows()
+s.close()
