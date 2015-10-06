@@ -8,7 +8,6 @@ import time
 
 import serial
 s = serial.Serial('/dev/ttyACM3', 115200)
-# s = time
 
 # try:
 #     # import sys
@@ -20,9 +19,6 @@ s = serial.Serial('/dev/ttyACM3', 115200)
 #     print "[-]Cannot import robot interface"
 
 cap = cv2.VideoCapture(1)
-
-def test(a):
-    print "hi"
 
 def nothing(x):
     pass
@@ -109,8 +105,8 @@ cv2.createTrackbar('Id','filter',1,255,nothing)
 
 # resetSliders()
 
+# Reads a single frame in order to determine the height and width of the image
 _, test = cap.read()
-# test = cv2.transpose(test)
 height = test.shape[0]
 width = test.shape[1]
 midw = width/2
@@ -121,25 +117,9 @@ di = 1
 ie = 1
 font = cv2.FONT_HERSHEY_SIMPLEX
 robotEnabled = False
-# cv2.resizeWindow('mask', 320, 320);
-
-
-# doRobot(1,1,1)
-# rm.speedLeft = 70
-# rm.speedRight = 70
-# ss.updateRobotState(rm)
 
 while(1):
-
-    # Take each frame
     _, frame = cap.read()
-    # frame = cv2.transpose(frame)
-    # frame = cv2.flip(frame)
-    # s.write( chr(1)  + chr(1) + chr(speed) + chr(0)  + chr(1) + chr(speed) )
-    # s.write( chr(101) + chr(1)  + chr(1) + chr(speed) )
-
-
-    #Try denoising algorithm (ToDo)
 
     # Convert BGR to HSV
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -176,16 +156,14 @@ while(1):
     filter = cv2.erode(filter, ke, iterations = ie)
     filter = cv2.dilate(filter, kd, iterations = di)
 
-    # if (ie < 1 and id < 1): #Bug, cannot disable morpological operations
-        # filter = np.copy(mask)
     cv2.imshow('filter', filter)
 
     # Bitwise-AND mask and original image
     # res = cv2.bitwise_and(frame,frame, mask= filter)
     # cv2.imshow('result',res)
-
     # cv2.imshow('hsv', hsv)
     # cv2.imshow('frame',frame)
+
     cv2.imshow('mask',mask)
 
     f2 = np.copy(frame)
@@ -194,13 +172,10 @@ while(1):
     _, contours, hierarchy = cv2.findContours(filter, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     contours = sorted(contours, key = cv2.contourArea, reverse = True)[:5] # Reduces contours to only top 5 based on area.
-    # cv2.drawContours(f2, contours, -1, (0,0,255), 3)
-    moo = True
+    blockVisible = True
 
 
-    #Find centroids of contour moments (Refer to http://docs.opencv.org/master/dd/d49/tutorial_py_contour_features.html#gsc.tab=0)
-    for c in contours: #Try dealing with similiar areas, using a a +- percentage change
-        # moo = False
+    for c in contours:
         mo = cv2.moments(c)
         conA = cv2.contourArea(c)
 
@@ -209,24 +184,17 @@ while(1):
             approx = cv2.approxPolyDP(c, 0.02 * peri, True)
 
             if 4 <= len(approx) < 10: # Look for object within specific range of sides
-                moo = False
+                blockVisible = False
 
                 try:
                     cx = int(mo['m10']/mo['m00'])
                     cy = int(mo['m01']/mo['m00'])
-                    # drawFeatures(cx, cy, len(approx))
-                    # angle = np.degrees(np.arctan(float(cx-midw)/float(cy)))
-                    # cv2.putText(f2,str(angle),(100,100), font, 1,(160,100,50),2,cv2.LINE_AA)
                     if checkMs(10) and cy > midh-midh:
                         if robotEnabled:
                             drawFeatures(cx, cy, len(approx))
                             cv2.drawContours(f2, [approx], -1, (0, 200, 50), 3)
                             angle = np.degrees(np.arctan(float(cx-midw)/float(cy)))
-                            # print "angle: ", str(angle)
                             cv2.putText(f2,str(angle),(100,100), font, 1,(160,100,50),2,cv2.LINE_AA)
-                            # doRobot(10, angle, 50)
-                            # s.write( chr(101) + chr(1)  + chr(1) + chr(0) )
-                            # s.write( chr(101) + chr(0)  + chr(1) + chr(0) )
                             tol = 3
                             speed = (50+ abs(int(angle)))
                             speed = int(speed)
@@ -254,11 +222,6 @@ while(1):
                                 s.write( chr(101) + chr(1)  + chr(1) + chr(speed-10) )
 
 
-                            # cv2.putText(f2,str(angle),(100,100), font, 1,(160,100,50),2,cv2.LINE_AA)
-                            # ss.updateRobotState(rm)
-                            # rm.speedLeft = 70
-                            # rm.speedRight = 70
-                            # ss.updateRobotState(rm)
                             # ss.updateRobotState(rm)
 
 
@@ -270,7 +233,7 @@ while(1):
                 s.write( chr(101) + chr(1)  + chr(1) + chr(0) )
                 s.write( chr(101) + chr(0)  + chr(1) + chr(0) )
 
-    if moo is True:
+    if blockVisible is True:
         s.write( chr(101) + chr(1)  + chr(1) + chr(0) )
         s.write( chr(101) + chr(0)  + chr(1) + chr(0) )
 
@@ -289,8 +252,6 @@ while(1):
             s.write( chr(101) + chr(1)  + chr(1) + chr(0) )
             s.write( chr(101) + chr(0)  + chr(1) + chr(0) )
             robotEnabled = False
-            # stopRobot()
-    # cv2.resizeWindow('mask', 800, 600);
 
 cv2.destroyAllWindows()
 s.close()
