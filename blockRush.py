@@ -51,14 +51,14 @@ def stopRobot():
     
 def doRobot(angle, offset, visible):
     gain_angle = 1 * angle * 0.5
-    gain_offset = 0 * offset * 0.5
+    gain_offset = 60 * offset/midw * 0.5 
 
     tollorance_angle = 3
     tollorance_offset = 0
     
     threshold_speed = lambda x: x if 55<x<90 else 70
     
-    speed = 50 #base speed
+    speed = 60 #base speed
     speed_left =  threshold_speed(speed - gain_angle - gain_error)
     speed_right = threshold_speed(speed + gain_angle + gain_error)
 
@@ -138,7 +138,7 @@ while(1):
     #Find contours and draw them
     _, contours, hierarchy = cv2.findContours(np.copy(mask), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-    contours = sorted(contours, key = cv2.contourArea, reverse = True)[:5] # Reduces contours to only top 5 based on area.
+    contours = sorted(contours, key = cv2.contourArea, reverse = True)[:1] # Reduces contours to only top 5 based on area.
     blockVisible = False
 
 
