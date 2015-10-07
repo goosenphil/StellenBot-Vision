@@ -6,15 +6,6 @@ import serial
 # s = serial.Serial('/dev/pts/21', 115200)
 s = serial.Serial('/dev/ttyACM3', 115200)
 
-# try:
-#     # import sys
-#     # sys.path.insert(0, '../interface')
-#     import RobotModel
-#     import RobotSerial
-#     print "[+] Imported robot interface!"
-# except ImportError:
-#     print "[-]Cannot import robot interface"
-
 cap = cv2.VideoCapture(1)
 
 def nothing(x):
