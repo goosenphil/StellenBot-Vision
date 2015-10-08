@@ -8,16 +8,7 @@ import time
 
 import serial
 # s = serial.Serial('/dev/pts/21', 115200)
-s = serial.Serial('/dev/ttyACM3', 115200)
-
-# try:
-#     # import sys
-#     # sys.path.insert(0, '../interface')
-#     import RobotModel
-#     import RobotSerial
-#     print "[+] Imported robot interface!"
-# except ImportError:
-#     print "[-]Cannot import robot interface"
+s = serial.Serial('/dev/ttyACM0', 115200)
 
 cap = cv2.VideoCapture(1)
 
@@ -43,7 +34,7 @@ def resetSliders(): #Sets sliders to their default positions
     cv2.setTrackbarPos('Gu', 'mask', 255)
     cv2.setTrackbarPos('Ru', 'mask', 255)
 
-def drawFeatures(cx, cy, sides):
+def drawFeatures(cx, cy, sides, conA):
     cv2.circle(drawFrame,(cx,cy), 5, (255,0,0), -1)
     cv2.putText(drawFrame,(str((cx,cy,conA))),(cx,cy), font, 1,(255,100,50),2,cv2.LINE_AA) # Puts co-ordinates of object
     cv2.putText(drawFrame,(str((midw-cx,height-cy,conA,sides))),(cx,cy+50), font, 1,(155,200,100),2,cv2.LINE_AA) #Distance from bottom centre, contour area and sides
@@ -51,39 +42,81 @@ def drawFeatures(cx, cy, sides):
 
 def doRobot(angle):
     tol = 3
-    speed = (50+ abs(int(angle)))
+    speed = (60+ abs(int(angle)))
     speed = int(speed)
     if speed > 90:
-        speed = 70
+        speed = 75
     if speed < 70:
-        speed = 70
+        speed = 75
     print "[",str(speed),"]"
     if (tol > abs(angle) ): # Attempt to move forward when on line
         cv2.putText(drawFrame,"|"+str(speed)+"|",(100,150), font, 1,(255,255,100),2,cv2.LINE_AA)
-        s.write( chr(101) + chr(0)  + chr(1) + chr(80) )
-        s.write( chr(101) + chr(1)  + chr(1) + chr(80) )
+        send(0, 1, 80)
+        send(1, 1, 80)
         print "______________"
     elif ( angle < -tol): # Attempt to move right towards line
         print "<<<<<<<<<<<<<<"
         cv2.putText(drawFrame,"<"+str(speed),(100,150), font, 1,(255,255,100),2,cv2.LINE_AA)
-        s.write( chr(101) + chr(1)  + chr(1) + chr(speed) )
-        s.write( chr(101) + chr(0)  + chr(1) + chr(speed-10) )
+        send(1,1,speed)
+        send(1,1,speed-10)
     elif( angle > tol): # Attempt to move left towards line
-        # rm.speedLeft = speed
         cv2.putText(drawFrame,(str(speed)+">"),(100,150), font, 1,(255,255,100),2,cv2.LINE_AA)
         print ">>>>>>>>>>>>>>"
-        s.write( chr(101) + chr(0)  + chr(1) + chr(speed) )
-        s.write( chr(101) + chr(1)  + chr(1) + chr(speed-10) )
+        send(0,1,speed)
+        send(1,1,speed-10)
 
 def stopRobot():
-    s.write( chr(101) + chr(1)  + chr(1) + chr(0) )
-    s.write( chr(101) + chr(0)  + chr(1) + chr(0) )
+    send(1,1,0)
+    send(0,1,0)
 
 def centroid(contour):
-    mo = cv2.moments(c)
+    mo = cv2.moments(contour)
     cx = int(mo['m10']/mo['m00'])
     cy = int(mo['m01']/mo['m00'])
     return (cx, cy)
+
+def send(byte1, byte2, byte3):
+    s.write( chr(101) + chr(byte1)  + chr(byte2) + chr(byte3) )
+
+def trackBlock(mask, drawFrame):
+    _, contours, hierarchy = cv2.findContours(np.copy(mask), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+    contours = sorted(contours, key = cv2.contourArea, reverse = True)[:5] # Reduces contours to only top 5 based on area.
+    blockVisible = True
+
+
+    for c in contours:
+        conA = cv2.contourArea(c)
+
+    	if conA > 200:
+            peri = cv2.arcLength(c, True)
+            approx = cv2.approxPolyDP(c, 0.02 * peri, True)
+
+            if 4 <= len(approx) < 10: # Look for object within specific range of sides
+                blockVisible = False
+
+                try:
+                    centre = centroid(c)
+                    cx = centre[0]
+                    cy = centre[1]
+
+                    if checkMs(10):
+                        if robotEnabled:
+                            drawFeatures(cx, cy, len(approx), conA)
+                            cv2.drawContours(drawFrame, [approx], -1, (0, 200, 50), 3)
+                            angle = np.degrees(np.arctan(float(cx-midw)/float(cy)))
+                            doRobot(angle)
+
+
+                except:
+                    pass
+
+
+            else:
+                stopRobot()
+
+    if blockVisible is True:
+        stopRobot()
 
 cv2.namedWindow('mask', cv2.WINDOW_NORMAL)
 cv2.namedWindow('contours', cv2.WINDOW_NORMAL)
@@ -138,43 +171,7 @@ while(1):
     drawFrame = np.copy(frame)
 
     #Find contours and draw them
-    _, contours, hierarchy = cv2.findContours(np.copy(mask), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
-    contours = sorted(contours, key = cv2.contourArea, reverse = True)[:5] # Reduces contours to only top 5 based on area.
-    blockVisible = True
-
-
-    for c in contours:
-        conA = cv2.contourArea(c)
-
-    	if conA > 200:
-            peri = cv2.arcLength(c, True)
-            approx = cv2.approxPolyDP(c, 0.02 * peri, True)
-
-            if 4 <= len(approx) < 10: # Look for object within specific range of sides
-                blockVisible = False
-
-                try:
-                    centre = centroid(c)
-                    cx = centre[0]
-                    cy = centre[1]
-                    if checkMs(10) and cy > midh-midh:
-                        if robotEnabled:
-                            drawFeatures(cx, cy, len(approx))
-                            cv2.drawContours(drawFrame, [approx], -1, (0, 200, 50), 3)
-                            angle = np.degrees(np.arctan(float(cx-midw)/float(cy)))
-                            doRobot(angle)
-
-
-                except:
-                    pass
-
-
-            else:
-                stopRobot()
-
-    if blockVisible is True:
-        stopRobot()
+    trackBlock(mask, drawFrame)
 
 
     cv2.imshow('contours', drawFrame)
