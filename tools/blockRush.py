@@ -7,10 +7,25 @@ import numpy as np
 import time
 
 import serial
+
+try:
+    import RPi.GPIO as GPIO
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(18, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    print "[+] Imported GPIO interface!"
+except ImportError:
+    print "[-]Cannot import GPIO interface"
+
 # s = serial.Serial('/dev/pts/21', 115200)
-s = serial.Serial('/dev/ttyACM0', 115200)
+s = serial.Serial('/dev/ttyACM3', 115200)
 
 cap = cv2.VideoCapture(1)
+
+
+gotBlock = False
+def checkSwitch():
+    return gotBlock
+    # return  !GPIO.input(18)
 
 # lastSend =
 def send(byte1, byte2, byte3):
@@ -34,11 +49,22 @@ def checkMs(diff):
 
 stopTick = 0.0
 def checkMsStop(diff):
-    newTime = time.time() * 1000
+    newTimeS = time.time() * 1000
     global stopTick
 
-    if (newTime-stopTick > diff):
-        stopTick = newTime
+    if (newTimeS-stopTick > diff):
+        stopTick = newTimeS
+        return True
+
+    return False
+
+rotTick = 0.0
+def checkMsRotate(diff):
+    newTimeR = time.time() * 1000
+    global rotTick
+
+    if (newTimeR-rotTick  > diff):
+        rotTick  = newTimeR
         return True
 
     return False
@@ -49,6 +75,7 @@ def drawFeatures(cx, cy, sides, conA):
     cv2.putText(drawFrame,(str((midw-cx,height-cy,conA,sides))),(cx,cy+50), font, 1,(155,200,100),2,cv2.LINE_AA) #Distance from bottom centre, contour area and sides
     cv2.line(drawFrame, (cx,cy),(midw,height), (200,150,0), 5)
 
+# ToDo: make the robot stop less often.
 def doRobot(angle):
     tol = 3
     speed = (60+ abs(int(angle)))
@@ -72,13 +99,18 @@ def doRobot(angle):
         send(1,1,speed-10)
 
 def stopRobot():
-    if checkMsStop(100):
-        send(1,1,0)
-        send(0,1,0)
+    # if checkMsStop(200): # Possibly disable me
+    send(1,1,0)
+    send(0,1,0)
 
+# Keep on rotating (anti clockswise) if bock does not change in area or co-ordinates enough
+toggleState = False
 def rotateRobot():
-    send(1, 0, 75)
-    send(1, 1, 70)
+    rotSpeed = 90
+    send(1, 0, rotSpeed)
+    send(1, 1, rotSpeed-10)
+    if checkMsRotate(400):
+        stopRobot()
 
 def centroid(contour):
     mo = cv2.moments(contour)
@@ -160,12 +192,16 @@ while(1):
     lower_BGR = np.array([bl,gl,rl])
     upper_BGR = np.array([bu,gu,ru])
     # Threshold the HSV image to get only BGR colors
+    if gotBlock: # Set to beacon if block is found. We can also have a state reset colour?
+        lower_BGR = np.array([0,93,0]) #Current beacon: Yellow screwdriver box
+        upper_BGR = np.array([33,255,255])
+
     mask = cv2.inRange(hsv, lower_BGR, upper_BGR)
     # print "NON"+str(cv2.countNonZero(mask))
 
     #
     angle = None
-    if cv2.countNonZero(mask) > 200: # A fast way of checking for the block before performing further operations on it
+    if cv2.countNonZero(mask) > 1000: # A fast way of checking for the block before performing further operations on it
         cx, cy, conA = trackBlock(mask, drawFrame)
         if cx != 0 and cx != 0 and conA != 0:
             angle = np.degrees(np.arctan(float(cx-midw)/float(cy)))
@@ -173,7 +209,7 @@ while(1):
     cv2.imshow('mask',mask)
 
     if blockVisible and angle != None:
-        blockVisible = False
+        blockVisible = False #Possibly use a counter instead to prevent single frame block loss
         print "block is visible!"
         if robotEnabled:
             if checkMs(10):
@@ -181,12 +217,10 @@ while(1):
         # seekBlocks()
     elif not robotEnabled:
         stopRobot()
-        print "No block found."
+        print "Robot disabled"
     else:
-        # rotateRobot();
-        print "Block lost!"
-        stopRobot()
-        pass
+        rotateRobot();
+        print "Block lost! Now rotating robot"
 
 
     cv2.imshow('contours', drawFrame)
@@ -194,14 +228,31 @@ while(1):
     k = cv2.waitKey(10) & 0xFF
     if k == 27: #Checks if escape is pressed
         break
-    if k == 'r': # Check for spacebar (To reset sliders)
-        resetSliders()
     if k == 32: # Press space to toggle robot
         if robotEnabled == False:
             robotEnabled = True
         else:
             stopRobot()
             robotEnabled = False
+    if k == 97:
+        print "BLOCK FOUND ACTIVATED. Remember to enable as GPIO"
+        gotBlock = True
 
 cv2.destroyAllWindows()
 s.close()
+
+# What needs to be done:
+# testing the gpio interface, if reed is enabled long enough, return to base. Show it a reset colour card? Or if base is large enought, stop. Possibly place magnet into base station.
+# improving the block tracking part, determine why it sometimes stands still. Make it into a more elegant solution that isn't as reliant on luck.
+# Handling offscreen blocks, by guessing.
+# Example of offscreen classification: (By using percentages of screen space.)
+    #         if cx < int(width*0.2):
+    #             send(1, 1, 65)
+    #             send(0, 1, 75)
+    #         elif cx > int(width*0.8):
+    #             send(1, 1, 75)
+    #             send(0, 1, 65)
+    #             # pass
+    #         else:
+    #             send(1, 1, 75)
+    #             send(0, 1, 75)
