@@ -106,10 +106,10 @@ def stopRobot():
 # Keep on rotating (anti clockswise) if bock does not change in area or co-ordinates enough
 toggleState = False
 def rotateRobot():
-    rotSpeed = 90
+    rotSpeed = 79
     send(1, 0, rotSpeed)
     send(1, 1, rotSpeed-10)
-    if checkMsRotate(400):
+    if checkMsRotate(300):
         stopRobot()
 
 def centroid(contour):
@@ -135,7 +135,7 @@ def trackBlock(mask, drawFrame):
     for c in contours:
         conA = cv2.contourArea(c)
 
-    	if conA > 200:
+    	if conA > 150:
             peri = cv2.arcLength(c, True)
             approx = cv2.approxPolyDP(c, 0.02 * peri, True)
 
@@ -201,7 +201,7 @@ while(1):
 
     #
     angle = None
-    if cv2.countNonZero(mask) > 1000: # A fast way of checking for the block before performing further operations on it
+    if cv2.countNonZero(mask) > 150: # A fast way of checking for the block before performing further operations on it
         cx, cy, conA = trackBlock(mask, drawFrame)
         if cx != 0 and cx != 0 and conA != 0:
             angle = np.degrees(np.arctan(float(cx-midw)/float(cy)))
