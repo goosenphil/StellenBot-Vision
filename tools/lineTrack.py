@@ -180,6 +180,7 @@ while(1):
     if k == 27: #Checks if escape is pressed
         break
     if k == 32: # Press space to toggle robot
+        s.flush()
         if robotEnabled == False:
             robotEnabled = True
         else:

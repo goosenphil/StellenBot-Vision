@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 
-# A program that filters out objects base on colour
+# A program that filters out objects base on colour and mixes it with the greyscale image
 import cv2
 import numpy as np
 
@@ -67,6 +67,9 @@ while(1):
 
     # Convert BGR to HSV
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    grey = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    grey = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
+    cv2.imshow('grey', grey)
 
     bl = cv2.getTrackbarPos('Bl','mask')
     gl = cv2.getTrackbarPos('Gl','mask')
@@ -105,7 +108,8 @@ while(1):
     cv2.imshow('filter', filter)
 
     # Bitwise-AND mask and original image
-    res = cv2.bitwise_and(frame,frame, mask= filter)
+    res = cv2.bitwise_and(grey,frame, mask= filter)
+    # res = cv2.bitwise_and(frame,frame, mask= filter)
     cv2.imshow('result',res)
 
     cv2.imshow('hsv', hsv)
